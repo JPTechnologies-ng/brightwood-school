@@ -1,12 +1,18 @@
 from datetime import datetime, timezone
+from email.message import EmailMessage
 import json
+import os
 import re
+import smtplib
 from pathlib import Path
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 
 
 ROOT = Path(__file__).resolve().parent
+load_dotenv(ROOT / ".env")
+CONTACT_EMAIL = "adogbejoseph419@gmail.com"
 app = Flask(__name__, static_folder=None)
 
 
@@ -26,6 +32,31 @@ def pages(page):
 @app.get("/assets/<path:filename>")
 def assets(filename):
     return send_from_directory(ROOT / "assets", filename)
+
+
+def send_inquiry_email(record):
+    username = os.environ.get("SMTP_USERNAME")
+    password = "".join(os.environ.get("SMTP_PASSWORD", "").split())
+    if not username or not password:
+        raise RuntimeError("Contact email is not configured on the server.")
+
+    message = EmailMessage()
+    message["Subject"] = "Website contact form inquiry"
+    message["From"] = username
+    message["To"] = CONTACT_EMAIL
+    message["Reply-To"] = record["email"]
+    message.set_content(
+        f"Name: {record['name']}\n"
+        f"Email: {record['email']}\n"
+        f"Grade: {record['grade']}\n\n"
+        f"{record['message']}\n\n"
+        f"Submitted: {record['submitted_at']}"
+    )
+
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
+        smtp.starttls()
+        smtp.login(username, password)
+        smtp.send_message(message)
 
 
 @app.post("/api/inquiries")
@@ -54,6 +85,15 @@ def submit_inquiry():
         "message": message,
         "submitted_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    try:
+        send_inquiry_email(record)
+    except RuntimeError as error:
+        return jsonify({"ok": False, "error": str(error)}), 503
+    except (OSError, smtplib.SMTPException):
+        app.logger.exception("Unable to deliver contact form inquiry")
+        return jsonify({"ok": False, "error": "We could not deliver your message right now. Please try again later."}), 503
+
     with (ROOT / "inquiries.jsonl").open("a", encoding="utf-8") as inquiries:
         inquiries.write(json.dumps(record, ensure_ascii=True) + "\n")
     return jsonify({"ok": True})

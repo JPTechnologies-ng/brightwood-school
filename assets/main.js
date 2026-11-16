@@ -27,10 +27,12 @@ if (inquiryForm) {
         method: 'POST',
         body: new FormData(inquiryForm),
       });
-      const result = await response.json();
+      const result = response.headers.get('content-type')?.includes('application/json')
+        ? await response.json().catch(() => null)
+        : null;
 
-      if (!response.ok || !result.ok) {
-        throw new Error(result.error || 'Please try again in a moment.');
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error || 'The server returned an unexpected response. Please try again later.');
       }
 
       inquiryForm.reset();
