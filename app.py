@@ -8,12 +8,21 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
 CONTACT_EMAIL = "adogbejoseph419@gmail.com"
 app = Flask(__name__, static_folder=None)
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": "https://jptechnologi-ng-com.github.io"
+        }
+    }
+)
 
 
 @app.get("/")
