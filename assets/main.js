@@ -23,7 +23,7 @@ if (inquiryForm) {
     submitButton.disabled = true;
 
     try {
-      const response = await fetch('https://school-website-mc4w.onrender.com//api/inquiries', {
+      const response = await fetch('https://school-website-mc4w.onrender.com/api/inquiries', {
         method: 'POST',
         body: new FormData(inquiryForm),
       });
