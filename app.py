@@ -19,7 +19,7 @@ CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": "https://jptechnologi-ng-com.github.io"
+            "origins": "https://jptechnologies-ng.github.io"
         }
     }
 )
